@@ -1,7 +1,9 @@
 package de.ph1b.audiobook.injection
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.support.multidex.MultiDex
 import android.support.v7.app.AppCompatDelegate
 import de.ph1b.audiobook.BuildConfig
 import de.ph1b.audiobook.features.BookAdder
@@ -34,6 +36,12 @@ class App : Application() {
   private fun newComponent() = DaggerApplicationComponent.builder()
     .androidModule(AndroidModule(this))
     .build()
+
+  override fun attachBaseContext(base: Context?) {
+    // multi-dex in debug only. In release we don't need it due to proguard
+    if (BuildConfig.DEBUG) MultiDex.install(base)
+    super.attachBaseContext(base)
+  }
 
   companion object {
 
