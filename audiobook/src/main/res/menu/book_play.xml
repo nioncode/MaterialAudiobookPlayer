@@ -11,6 +11,12 @@
         app:showAsAction="always"/>
 
     <item
+        android:id="@+id/media_route_menu_item"
+        android:title="@string/chromecast"
+        app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
+        app:showAsAction="always"/>
+
+    <item
         android:id="@+id/action_bookmark"
         android:icon="@drawable/bookmark_outline"
         android:title="@string/bookmark"

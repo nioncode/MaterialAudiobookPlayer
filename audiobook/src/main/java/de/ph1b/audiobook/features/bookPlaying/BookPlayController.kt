@@ -2,6 +2,10 @@ package de.ph1b.audiobook.features.bookPlaying
 
 import android.os.Build
 import android.os.Bundle
+import android.support.v4.view.MenuItemCompat
+import android.support.v7.app.MediaRouteActionProvider
+import android.support.v7.media.MediaControlIntent
+import android.support.v7.media.MediaRouteSelector
 import android.support.v7.widget.Toolbar
 import android.view.*
 import android.widget.ImageView
@@ -10,6 +14,10 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.bluelinelabs.conductor.RouterTransaction
 import com.getbase.floatingactionbutton.FloatingActionButton
+import com.google.android.gms.cast.CastMediaControlIntent
+import com.google.android.gms.cast.framework.CastButtonFactory
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.squareup.picasso.Picasso
 import de.ph1b.audiobook.Book
 import de.ph1b.audiobook.R
@@ -71,6 +79,10 @@ class BookPlayController(bundle: Bundle) : BaseController(bundle) {
   private lateinit var seekBar: SeekBar
   private lateinit var cover: ImageView
   private lateinit var toolbar: Toolbar
+  private val mediaRouteSelector = MediaRouteSelector.Builder()
+    .addControlCategory(CastMediaControlIntent.categoryForRemotePlayback())
+    .addControlCategory(MediaControlIntent.CATEGORY_LIVE_AUDIO)
+    .build()
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup): View {
     val view = inflater.inflate(R.layout.book_play, container, false)
@@ -263,6 +275,15 @@ class BookPlayController(bundle: Bundle) : BaseController(bundle) {
   override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
     inflater.inflate(R.menu.book_play, menu)
 
+    // setup chrome-cast
+    if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(activity) == ConnectionResult.SUCCESS) {
+      CastButtonFactory.setUpMediaRouteButton(applicationContext, menu, R.id.media_route_menu_item)
+      val mediaRouterItem = menu.findItem(R.id.media_route_menu_item)
+      val provider = MenuItemCompat.getActionProvider(mediaRouterItem) as MediaRouteActionProvider
+      provider.routeSelector = mediaRouteSelector
+    }
+
+    // show hide speed icon only if its available
     val speedItem = menu.findItem(R.id.action_time_lapse)
     speedItem.isVisible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 

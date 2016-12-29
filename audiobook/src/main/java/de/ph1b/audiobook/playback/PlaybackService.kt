@@ -13,9 +13,14 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserServiceCompat
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v7.media.MediaRouter
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
+import com.google.android.gms.cast.framework.SessionManager
 import d
 import de.ph1b.audiobook.features.MainActivity
 import de.ph1b.audiobook.features.bookOverview.BookShelfController
+import de.ph1b.audiobook.features.chromeCast.SimpleSessionManagerListener
 import de.ph1b.audiobook.injection.App
 import de.ph1b.audiobook.misc.RxBroadcast
 import de.ph1b.audiobook.misc.asV2Observable
@@ -67,11 +72,27 @@ class PlaybackService : MediaBrowserServiceCompat() {
   @Inject lateinit var bookUriConverter: BookUriConverter
   @Inject lateinit var mediaBrowserHelper: MediaBrowserHelper
   private lateinit var mediaSession: MediaSessionCompat
+  private lateinit var castSessionManager: SessionManager
+  private lateinit var mediaRouter: MediaRouter
   private lateinit var changeNotifier: ChangeNotifier
 
+  private val sessionManagerListener = object : SimpleSessionManagerListener<CastSession> {
+    override fun onSessionEnded(session: CastSession, error: Int) {
+      mediaRouter.setMediaSessionCompat(null)
+    }
+
+    override fun onSessionStarted(session: CastSession, sessionId: String?) {
+      mediaRouter.setMediaSessionCompat(mediaSession)
+    }
+  }
 
   override fun onCreate() {
     super.onCreate()
+
+    // chrome-cast
+    mediaRouter = MediaRouter.getInstance(this)
+    castSessionManager = CastContext.getSharedInstance(this).sessionManager
+    castSessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
 
     val eventReceiver = ComponentName(packageName, MediaEventReceiver::class.java.name)
     val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
@@ -330,6 +351,8 @@ class PlaybackService : MediaBrowserServiceCompat() {
 
     mediaSession.release()
     disposables.dispose()
+
+    castSessionManager.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
 
     super.onDestroy()
   }
